@@ -13,6 +13,7 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from youtube_transcript_api import YouTubeTranscriptApi
 from urllib.parse import urlparse, parse_qs
 
+# Styling for the side bar
 st.set_page_config(page_title="LLaMA Chat", layout="wide")
 st.markdown(
     """
@@ -45,7 +46,7 @@ st.markdown(
 
 st.title("🦙 Talk with YouTube videos!")
 
-# Sidebar - Upload/fetch transcript
+# Sidebar - For Upload or Fetching transcript
 with st.sidebar:
     st.header("📄 Video Loader")
     input_mode = st.radio("Source:", ["YouTube Video ID", "Upload .txt File"])
@@ -67,7 +68,8 @@ with st.sidebar:
             return soup.title.string.replace(" - YouTube", "").strip()
         else:
             return "Unknown Title"
-
+    
+    # Fetch transcript using the YouTubeTranscript API
     if input_mode == "YouTube Video ID":
         video_url = st.text_input("Paste YouTube URL:", value=st.session_state.get("video_url", ""))
         if video_url:
@@ -84,11 +86,15 @@ with st.sidebar:
                     f"<p style='font-weight: bold; font-size: 20px;'>Title: {st.session_state.video_title}</p>",
                     unsafe_allow_html=True
                 )
+
+                # The code for the embedded video on the left side
                 embed_url = f"https://www.youtube.com/embed/{video_id}"
                 st.session_state.embed_url = embed_url
                 iframe(embed_url, width=400, height=250)
             except Exception as e:
                 st.error(f"Failed: {e}")
+    
+    # The below statement applies when the user wants to upload a trasnscript manually (it can be from any platform)
     else:
         uploaded_file = st.file_uploader("Upload .txt file", type=["txt"])
         if uploaded_file:
@@ -129,20 +135,29 @@ with st.sidebar:
         st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-
-
 # Init session state
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "transcript_text" not in st.session_state:
     st.session_state.transcript_text = None
 if "retriever" not in st.session_state and st.session_state.get("transcript_text"):
+    # Splitting the document into chunks of size 1000
     splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     chunks = splitter.create_documents([st.session_state.transcript_text])
+
+    # Using the embedding model to convert the chunks into vectors
     embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+
+    # Storing the vectors into vector store for efficient retrieval
     vector_store = FAISS.from_documents(chunks, embeddings)
+
+    # Retrieving the 4 most relevent chunks (documents) form the vector store using semantic similarity
     st.session_state.retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 4})
 
+# This PromptTemplate defines the structure for interacting with the LLM.
+# It ensures that the assistant answers questions in a friendly, helpful way,
+# uses the YouTube video title, transcript/context, and the user’s question as inputs,
+# and decides when to rely on the provided context vs. answer more casually.
 prompt_template = PromptTemplate(
     template="""You are a friendly and helpful assistant. The user is asking questions about the YouTube video titled: "{title}".
 
@@ -162,6 +177,7 @@ prompt_template = PromptTemplate(
     input_variables=["context", "question", "title"]
 )
 
+# Used to join the documents after retrieval
 def format_docs(docs):
     return "\n\n".join(doc.page_content for doc in docs)
 
@@ -209,10 +225,11 @@ if prompt := st.chat_input("Ask something..."):
                 try:
                     assistant_response = chain.invoke(prompt)
                 except Exception as e:
-                    assistant_response = f"❌ Error: {e}"
+                    assistant_response = f"Error: {e}"
         else:
             assistant_response = "No transcript loaded yet."
 
+        # To show the typing animation
         for chunk in assistant_response.split():
             full_response += chunk + " "
             time.sleep(0.03)
