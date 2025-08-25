@@ -1,9 +1,8 @@
 # 🎥 TalkWithTube – Your Video Chatbot  
 
-TalkWithTube is an **AI-powered chatbot for YouTube videos**. It allows you to interact with videos like never before — ask questions, get summaries, and extract key insights instantly without scrubbing through hours of content.  
+TalkWithTube is an **AI-powered chatbot for YouTube videos**. It allows you to interact with videos like never before — ask apecific questions, get summaries, and extract key insights instantly without scrubbing through hours of content.  
 
 ![TalkWithTube Poster](TalkWithTube-Poster.png)  
-*(Poster included for quick overview — convert `TalkWithTube-Poster.pdf` to `.png` so GitHub can render it here)*  
 
 ---
 
