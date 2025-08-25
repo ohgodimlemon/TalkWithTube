@@ -76,7 +76,7 @@ ollama run llama3 "Hello from LLaMA"
 ## 🚀 Run the App
 Start Streamlit (replace `app.py` with your script filename if different):
 ```bash
-streamlit run app.py
+streamlit run transcript_chatbot.py
 ```
 
 Open the URL shown in your terminal (usually `http://localhost:8501`).
